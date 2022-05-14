@@ -19,11 +19,31 @@ async function run() {
       .db("DoctorsPortal")
       .collection("appointments");
 
+    const bookingCollection = client
+      .db("DoctorsPortal")
+      .collection("bookings");
+
       // Get API
     app.get("/appointments", async (req, res) => {
       const result = await appointCollection.find().toArray();
       res.send(result);
     });
+
+
+    // Post API
+    app.post("/booking", async(req, res) => {
+      const booking = req.body
+      const query = {treatmentName: booking.treatmentName, treatmentDate: booking.treatmentDate, patientEmail: booking.patientEmail, slot: booking.slot}
+      console.log(query);
+      const alreadyBooked = await bookingCollection.findOne(query)
+      if(alreadyBooked){
+        return res.send({success: false, error: `Already Booked on ${query.treatmentDate} at ${query.slot}`})
+      }
+      const result= await bookingCollection.insertOne(booking)
+      res.send({success: true, message: `Booked ${booking.treatmentDate} at ${booking.slot}`})
+    })
+
+
   } finally {
     // Nothing Here
   }
