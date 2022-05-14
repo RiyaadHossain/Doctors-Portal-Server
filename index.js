@@ -37,8 +37,8 @@ async function run() {
 
     // Discalimer: It's not the accurate way to query. Learn - Aggregate, Lookup, Pipeline, Match, Group (MongoDB)
     app.get("/availables", async (req, res) => {
-      const date = req.query.date || "May 14, 2022";
-
+      const date = req.query.date;
+      console.log(req.query);
       const appointments = await appointCollection.find().toArray();
 
       const query = { treatmentDate: date };
@@ -65,7 +65,6 @@ async function run() {
         patientEmail: booking.patientEmail,
         slot: booking.slot,
       };
-      console.log(query);
       const alreadyBooked = await bookingCollection.findOne(query);
       if (alreadyBooked) {
         return res.send({
