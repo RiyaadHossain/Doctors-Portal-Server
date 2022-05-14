@@ -19,31 +19,66 @@ async function run() {
       .db("DoctorsPortal")
       .collection("appointments");
 
-    const bookingCollection = client
-      .db("DoctorsPortal")
-      .collection("bookings");
+    const bookingCollection = client.db("DoctorsPortal").collection("bookings");
 
-      // Get API
+    // Get API
     app.get("/appointments", async (req, res) => {
       const result = await appointCollection.find().toArray();
       res.send(result);
     });
 
+    // Get API
+    app.get("/booking", async (req, res) => {
+      const patientEmail = req.query.patient;
+      const query = { patientEmail };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Discalimer: It's not the accurate way to query. Learn - Aggregate, Lookup, Pipeline, Match, Group (MongoDB)
+    app.get("/availables", async (req, res) => {
+      const date = req.query.date || "May 14, 2022";
+
+      const appointments = await appointCollection.find().toArray();
+
+      const query = { treatmentDate: date };
+      const bookedServices = await bookingCollection.find(query).toArray();
+
+      appointments.map((appointment) => {
+        const bookedAppointments = bookedServices.filter(
+          (slot) => slot.treatmentName === appointment.name
+        );
+        const bookedSlots = bookedAppointments.map((booking) => booking.slot);
+        appointment.slots = appointment.slots.filter(
+          (slot) => !bookedSlots.includes(slot)
+        );
+      });
+      res.send(appointments);
+    });
 
     // Post API
-    app.post("/booking", async(req, res) => {
-      const booking = req.body
-      const query = {treatmentName: booking.treatmentName, treatmentDate: booking.treatmentDate, patientEmail: booking.patientEmail, slot: booking.slot}
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      const query = {
+        treatmentName: booking.treatmentName,
+        treatmentDate: booking.treatmentDate,
+        patientEmail: booking.patientEmail,
+        slot: booking.slot,
+      };
       console.log(query);
-      const alreadyBooked = await bookingCollection.findOne(query)
-      if(alreadyBooked){
-        return res.send({success: false, error: `Already Booked on ${query.treatmentDate} at ${query.slot}`})
+      const alreadyBooked = await bookingCollection.findOne(query);
+      if (alreadyBooked) {
+        return res.send({
+          success: false,
+          error: `Already Booked on ${query.treatmentDate} at ${query.slot}`,
+        });
       }
-      const result= await bookingCollection.insertOne(booking)
-      res.send({success: true, message: `Booked ${booking.treatmentDate} at ${booking.slot}`})
-    })
-
-
+      const result = await bookingCollection.insertOne(booking);
+      res.send({
+        success: true,
+        message: `Booked ${booking.treatmentDate} at ${booking.slot}`,
+      });
+    });
   } finally {
     // Nothing Here
   }
