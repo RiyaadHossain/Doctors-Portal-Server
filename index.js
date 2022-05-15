@@ -64,6 +64,14 @@ async function run() {
       res.send(result);
     });
 
+    // Get API - useAdmin [hook]
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email
+      const user = await userCollection.findOne({email: email})
+      const isAdmin = user.role === 'admin'
+      res.send({admin : isAdmin})
+    })
+
     // PUT API - Admin Users
     app.put("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
