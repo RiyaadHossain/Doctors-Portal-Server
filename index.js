@@ -21,6 +21,8 @@ async function run() {
 
     const bookingCollection = client.db("DoctorsPortal").collection("bookings");
 
+    const userCollection = client.db("DoctorsPortal").collection("users");
+
     // Get API
     app.get("/appointments", async (req, res) => {
       const result = await appointCollection.find().toArray();
@@ -54,6 +56,23 @@ async function run() {
         );
       });
       res.send(appointments);
+    });
+
+    // PUT API - jwt token
+    app.put("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
     });
 
     // Post API
