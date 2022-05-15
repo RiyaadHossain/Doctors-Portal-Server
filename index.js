@@ -2,6 +2,7 @@ const { MongoClient, ServerApiVersion } = require("mongodb");
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require('jsonwebtoken');
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
@@ -11,6 +12,10 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@doctoscluster.6eoyi.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
+
+const func = () => {
+
+}
 
 async function run() {
   try {
@@ -32,7 +37,9 @@ async function run() {
     // Get API
     app.get("/booking", async (req, res) => {
       const patientEmail = req.query.patient;
-      const query = { patientEmail };
+      const patientToken = req.headers.authorization
+      console.log(patientToken);
+      const query = { patientEmail : patientEmail};
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
@@ -72,7 +79,9 @@ async function run() {
         updatedDoc,
         options
       );
-      res.send(result);
+      const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN)
+      console.log(token);
+      res.send({result, token});
     });
 
     // Post API
