@@ -18,13 +18,13 @@ const verifyToken = (req, res, next) => {
   if (!authHeader) {
     return res.status(401).send({ message: "UnAuthorized access" });
   }
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
     if (err) {
-      return res.status(403).send({ message: 'Forbidden access' })
+      return res.status(403).send({ message: "Forbidden access" });
     }
     req.decoded = decoded;
-   
+
     next();
   });
 };
@@ -40,13 +40,13 @@ async function run() {
 
     const userCollection = client.db("DoctorsPortal").collection("users");
 
-    // Get API
+    // Get API - Appointments
     app.get("/appointments", async (req, res) => {
       const result = await appointCollection.find().toArray();
       res.send(result);
     });
 
-    // Get API
+    // Get API - Bookings
     app.get("/booking", verifyToken, async (req, res) => {
       const patientEmail = req.query.patient;
       const patientToken = req.decoded.email;
@@ -56,6 +56,24 @@ async function run() {
         return res.send(result);
       }
       res.status(401).send({ message: "Forbidden Request" });
+    });
+
+    // Get API - Users
+    app.get("/users", verifyToken, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    // PUT API - Admin Users
+    app.put("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const filter = { email: email };
+      const updatedDoc = {
+        $set: { role: "admin" },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     });
 
     // Discalimer: It's not the accurate way to query. Learn - Aggregate, Lookup, Pipeline, Match, Group (MongoDB)
