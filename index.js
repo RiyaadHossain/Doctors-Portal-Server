@@ -65,15 +65,22 @@ async function run() {
     });
 
     // PUT API - Admin Users
-    app.put("/users/admin/:email", async (req, res) => {
+    app.put("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log(email);
       const filter = { email: email };
-      const updatedDoc = {
-        $set: { role: "admin" },
-      };
-      const result = await userCollection.updateOne(filter, updatedDoc);
-      res.send(result);
+      const requester = req.decoded.email;
+      const requesterUser = await userCollection.findOne({
+        email: requester,
+      });
+      if (requesterUser.role === "admin") {
+        const updatedDoc = {
+          $set: { role: "admin" },
+        };
+        const result = await userCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      } else {
+        res.status(401).send({ message: "Forbidden Request" });
+      }
     });
 
     // Discalimer: It's not the accurate way to query. Learn - Aggregate, Lookup, Pipeline, Match, Group (MongoDB)
