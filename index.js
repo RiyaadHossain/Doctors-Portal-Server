@@ -13,6 +13,7 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@doctoscluster.6eoyi.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
 
+// Middlewares - to Verify Token
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -42,9 +43,25 @@ async function run() {
 
     const doctorCollection = client.db("DoctorsPortal").collection("doctors");
 
+    // Middlewares - to Verify Admin
+    const verifyAdmin = async (req, res, next) => {
+      const requester = req.decoded.email;
+      const requesterUser = await userCollection.findOne({
+        email: requester,
+      });
+      if (requesterUser.role === "admin") {
+        next();
+      } else {
+        res.status(401).send({ message: "Forbidden Request" });
+      }
+    };
+
     // Get API - Appointments
     app.get("/appointments", async (req, res) => {
-      const result = await appointCollection.find().project({name: 1}).toArray();
+      const result = await appointCollection
+        .find()
+        .project({ name: 1 })
+        .toArray();
       res.send(result);
     });
 
@@ -68,30 +85,28 @@ async function run() {
 
     // Get API - useAdmin [hook]
     app.get("/users/:email", async (req, res) => {
-      const email = req.params.email
-      const user = await userCollection.findOne({email: email})
-      const isAdmin = user?.role === 'admin'
-      res.send({admin : isAdmin})
-    })
+      const email = req.params.email;
+      const user = await userCollection.findOne({ email: email });
+      const isAdmin = user?.role === "admin";
+      res.send({ admin: isAdmin });
+    });
 
     // PUT API - Admin Users
-    app.put("/users/admin/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      const filter = { email: email };
-      const requester = req.decoded.email;
-      const requesterUser = await userCollection.findOne({
-        email: requester,
-      });
-      if (requesterUser.role === "admin") {
+    app.put(
+      "/users/admin/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const filter = { email: email };
+
         const updatedDoc = {
           $set: { role: "admin" },
         };
         const result = await userCollection.updateOne(filter, updatedDoc);
         res.send(result);
-      } else {
-        res.status(401).send({ message: "Forbidden Request" });
       }
-    });
+    );
 
     // Discalimer: It's not the accurate way to query. Learn - Aggregate, Lookup, Pipeline, Match, Group (MongoDB)
     app.get("/availables", async (req, res) => {
@@ -156,13 +171,18 @@ async function run() {
       });
     });
 
-    // Post API - Doctors
-    app.post("/adddoctor", async(req, res) => {
-      const doctor = req.body
-      const result = await doctorCollection.insertOne(doctor)
-      res.send(result)
-    })
+    // Get API - Doctors
+    app.get("/doctors", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await doctorCollection.find().toArray();
+      res.send(result);
+    });
 
+    // Post API - Doctors
+    app.post("/adddoctor", async (req, res) => {
+      const doctor = req.body;
+      const result = await doctorCollection.insertOne(doctor);
+      res.send(result);
+    });
   } finally {
     // Nothing Here
   }
