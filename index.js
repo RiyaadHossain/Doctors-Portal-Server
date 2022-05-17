@@ -40,9 +40,11 @@ async function run() {
 
     const userCollection = client.db("DoctorsPortal").collection("users");
 
+    const doctorCollection = client.db("DoctorsPortal").collection("doctors");
+
     // Get API - Appointments
     app.get("/appointments", async (req, res) => {
-      const result = await appointCollection.find().toArray();
+      const result = await appointCollection.find().project({name: 1}).toArray();
       res.send(result);
     });
 
@@ -131,7 +133,7 @@ async function run() {
       res.send({ result, token });
     });
 
-    // Post API
+    // Post API - Appointments Booking
     app.post("/booking", async (req, res) => {
       const booking = req.body;
       const query = {
@@ -153,6 +155,14 @@ async function run() {
         message: `Booked ${booking.treatmentDate} at ${booking.slot}`,
       });
     });
+
+    // Post API - Doctors
+    app.post("/adddoctor", async(req, res) => {
+      const doctor = req.body
+      const result = await doctorCollection.insertOne(doctor)
+      res.send(result)
+    })
+
   } finally {
     // Nothing Here
   }
