@@ -178,11 +178,20 @@ async function run() {
     });
 
     // Post API - Doctors
-    app.post("/adddoctor", async (req, res) => {
+    app.post("/adddoctor", verifyToken, verifyAdmin, async (req, res) => {
       const doctor = req.body;
       const result = await doctorCollection.insertOne(doctor);
       res.send(result);
     });
+
+    // Delete Api - Doctors
+    app.delete("/doctor/:email", verifyToken, verifyAdmin, async(req, res)=>{
+      const email = req.params.email
+      const filter = {email: email}
+      const result = await doctorCollection.deleteOne(filter)
+      res.send(result)
+    })
+
   } finally {
     // Nothing Here
   }
