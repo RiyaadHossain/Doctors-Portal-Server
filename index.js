@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -76,6 +76,14 @@ async function run() {
       }
       res.status(401).send({ message: "Forbidden Request" });
     });
+
+    // Get API - Booking
+    app.get("/booking/:id", verifyToken, async (req, res) => {
+      const id = req.params.id
+      const query = {_id: ObjectId(id)}
+      const result = await bookingCollection.findOne(query)
+      res.send(result)
+    })
 
     // Get API - Users
     app.get("/users", verifyToken, async (req, res) => {
@@ -156,7 +164,8 @@ async function run() {
         treatmentDate: booking.treatmentDate,
         patientEmail: booking.patientEmail,
         slot: booking.slot,
-      };
+        price: booking.price,
+      }; 
       const alreadyBooked = await bookingCollection.findOne(query);
       if (alreadyBooked) {
         return res.send({
@@ -167,6 +176,7 @@ async function run() {
       const result = await bookingCollection.insertOne(booking);
       res.send({
         success: true,
+        data: result,
         message: `Booked ${booking.treatmentDate} at ${booking.slot}`,
       });
     });
